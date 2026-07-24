@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local models, caches, and generated output
+# Ignore only a root-level directory of downloaded model weights. The source adapters
+# under finspec/models/ are part of this repository.
+/models/
+checkpoints/
+output/
+.cache/
+
+# Local reference papers (not part of the repository)
+/docs/*.pdf
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# data
+data/
