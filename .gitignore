@@ -12,15 +12,21 @@ venv/
 env/
 
 # Local models, caches, and generated output
-# Ignore only a root-level directory of downloaded model weights. The source adapters
-# under finspec/models/ are part of this repository.
 /models/
 checkpoints/
 output/
 .cache/
+/runtime/
+/artifacts/
+/experiments/
+/ops/
+/tests/
 
-# Local reference papers (not part of the repository)
-/docs/*.pdf
+# Local paper/source references and generated paper notes
+/tex/
+/docs/
+/doc/
+/pdf/
 
 # Editors and operating systems
 .DS_Store

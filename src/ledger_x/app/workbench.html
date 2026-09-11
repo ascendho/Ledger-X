@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ledger-X · 资金对账实验台</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101820;color:#eaf0f3}
+body{max-width:1120px;margin:40px auto;padding:0 22px}h1{letter-spacing:-1.5px;font-size:42px;margin:0}
+.accent{color:#71e4bd}.muted{color:#acbbc7;line-height:1.7}section{background:#192630;border:1px solid #30414e;border-radius:14px;padding:22px;margin:20px 0}
+textarea{box-sizing:border-box;width:100%;min-height:96px;font:inherit;background:#101820;color:inherit;border:1px solid #516273;border-radius:8px;padding:14px}
+button{background:#71e4bd;color:#10231e;border:0;border-radius:7px;padding:12px 20px;font-weight:700;cursor:pointer;margin-top:12px}button:disabled{opacity:.5;cursor:wait}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:14px}summary{cursor:pointer;padding:10px 0}.row{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.badge{font-size:12px;display:inline-block;border:1px solid #516273;border-radius:20px;padding:5px 10px}#status{color:#71e4bd}a{color:#71e4bd}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.metric{background:#101820;border-radius:9px;padding:14px}.metric strong{display:block;color:#71e4bd;font-size:20px;margin-top:6px}
+</style>
+<div class="row"><div><span class="accent">INFERENCE × RECONCILIATION</span><h1>Ledger-X<span class="accent">.</span></h1></div><div><span class="badge">合成账目 · 只读</span><p class="muted">授权商户：__SCOPE__</p></div></div>
+<p class="muted">从结算汇总下钻到交易证据。Qwen 负责工具选择与解释，数据库负责确定性金额计算。<br>本页不声称已获得加速；解码方案、接受率和性能结论以独立实验报告为准。</p>
+<section><label for="question">想核对什么？</label><textarea id="question">查询 M001 从2026年3月1日到9月1日的结算异常，选择差额最大的批次并解释原因。</textarea><div class="row"><button id="run">开始对账</button><p id="status" role="status" aria-live="polite">就绪 · 金额单位为分 · 日期区间右端不包含</p></div></section>
+<section><h2>对账解释</h2><pre id="answer">提交问题后显示模型解释；请结合下方原始证据核查。</pre></section>
+<section><h2>可审计的执行轨迹</h2><div id="trace"></div></section>
+<section><h2>推理加速证据</h2><div id="benchmark" class="metrics"><div class="metric">状态<strong>正在读取…</strong></div></div><p class="muted">这里只展示本机保存的实测结果；是否通过以报告结论为准，论文数字不会作为本项目成绩。</p></section>
+<p class="muted">观察日：2026-09-15 · 数据：synthetic-cny-v1 · 不连接银行，不执行资金操作。</p>
+<script>
+const run=document.getElementById('run'),status=document.getElementById('status'),answer=document.getElementById('answer'),trace=document.getElementById('trace'),benchmark=document.getElementById('benchmark');
+fetch('/api/benchmark').then(r=>r.json()).then(data=>{benchmark.replaceChildren();if(!data.available){benchmark.innerHTML=`<div class="metric">状态<strong>待验证</strong><span class="muted">${data.message}</span></div>`;return;}const r=data.result,c=r.candidate||'full',candidate=r.modes?.[c],items=[['结论',r.claim||'已测'],['AR p50',r.modes?.ar?.function_response_p50_ms?.toFixed(1)+' ms'],[`Ledger-X ${c} p50`,candidate?.function_response_p50_ms?.toFixed(1)+' ms'],['接受率',candidate?.acceptance_rate==null?'N/A':(100*candidate.acceptance_rate).toFixed(1)+'%']];items.forEach(([k,v])=>{const el=document.createElement('div');el.className='metric';el.innerHTML=`${k}<strong>${v}</strong>`;benchmark.append(el);});}).catch(()=>{benchmark.innerHTML='<div class="metric">状态<strong>报告不可用</strong></div>'});
+run.onclick=async()=>{run.disabled=true;status.textContent='正在请求公司本地 Qwen…';answer.textContent='';trace.replaceChildren();
+try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','X-Ledger-X-Token':'__TOKEN__'},body:JSON.stringify({question:document.getElementById('question').value})});
+if(!res.ok)throw new Error(await res.text());const data=await res.json();answer.textContent=data.answer||data.error||'未完成回答，请检查轨迹。';status.textContent=`${data.status} · 总计 ${(data.elapsed_ms/1000).toFixed(2)} 秒 · 模型 ${(data.timing.llm_ms/1000).toFixed(2)} 秒 · 工具 ${(data.timing.tool_ms/1000).toFixed(3)} 秒`;
+data.rounds.forEach((round,i)=>{const el=document.createElement('details'),title=document.createElement('summary'),body=document.createElement('pre');title.textContent=`第 ${i+1} 轮 · 模型 ${(round.llm.elapsed_ms/1000).toFixed(2)}s · ${round.tools.length} 个工具`;body.textContent=JSON.stringify({message:round.llm.message,usage:round.llm.usage,tools:round.tools},null,2);el.append(title,body);trace.append(el);});
+}catch(e){status.textContent='请求失败';answer.textContent=String(e);}finally{run.disabled=false;}};
+</script></html>

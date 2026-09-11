@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ledger-x"
+version = "0.1.0"
+description = "Ledger-X: synthetic reconciliation agent with verified tool-use acceleration."
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "duckdb>=1.4,<2",
+    "pydantic>=2.10,<3",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "jsonschema>=4.23,<5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+ledger-x = "ledger_x.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"ledger_x.app" = ["workbench.html"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
