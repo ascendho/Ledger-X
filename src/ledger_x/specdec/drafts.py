@@ -327,10 +327,18 @@ class DraftEngine:
             except (ValueError, AttributeError):
                 write_memory = False
             hidden = context.get("hidden") or []
+            retrieved = (self.history.retrieve(namespace, hidden)
+                         if self.mode in {"retrieval", "full"} else [])
+            if self.mode in {"retrieval", "full"}:
+                self.stats["retrieval_requests"] += 1
+                if namespace and hidden:
+                    self.stats["retrieval_eligible_requests"] += 1
+                if retrieved:
+                    self.stats["retrieval_candidate_requests"] += 1
+                    self.stats["retrieval_candidates"] += len(retrieved)
             self.active[req_id] = {"tools": tools, "namespace": namespace, "hidden": hidden,
                 "write_memory": write_memory is True,
-                "retrieved": self.history.retrieve(namespace, hidden) if self.mode in {"retrieval", "full"} else [],
-                "output": []}
+                "retrieved": retrieved, "retrieval_drafted": False, "output": []}
         state = self.active[req_id]
         output = list(tokens[prompt_len:])
         state["output"] = output  # only accepted tokens, never proposed ones
@@ -347,6 +355,10 @@ class DraftEngine:
             draft = self.history.continuation(state["retrieved"], output, self.budget)
             if draft:
                 source = "retrieval"
+                self.stats["retrieval_draft_steps"] += 1
+                if not state["retrieval_drafted"]:
+                    self.stats["retrieval_draft_requests"] += 1
+                    state["retrieval_drafted"] = True
         if not draft and self.mode == "full":
             draft = ngram_draft(tokens, self.budget)
             if draft:
